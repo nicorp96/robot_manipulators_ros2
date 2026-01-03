@@ -72,8 +72,11 @@ def get_robot_description(context: LaunchContext, arm_id, load_gripper, franka_h
             },
             robot_description,
         ],
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static'),
+        ]
     )
-
     return [robot_state_publisher]
 
 
@@ -132,6 +135,14 @@ def prepare_launch_description():
         arguments=["-topic", "/robot_description"],
         output="screen",
     )
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+        ],
+        output='screen'
+    )
 
     # Visualize in RViz
     rviz_file = os.path.join(
@@ -177,6 +188,7 @@ def prepare_launch_description():
             start_rviz_argument,
             gazebo_empty_world,
             robot_state_publisher,
+            bridge,
             spawn,
             RegisterEventHandler(
                 event_handler=OnProcessExit(
@@ -197,12 +209,6 @@ def prepare_launch_description():
                 )
             ),
             rviz,
-            # Node(
-            #     package="joint_state_publisher",
-            #     executable="joint_state_publisher",
-            #     name="joint_state_publisher",
-            #     parameters=[{"source_list": ["joint_states"], "rate": 30}],
-            # ),
         ]
     )
 

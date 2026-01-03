@@ -113,17 +113,17 @@ def generate_launch_description():
     use_fake_hardware = LaunchConfiguration("use_fake_hardware")
 
     urdf_launch_dir = get_package_share_directory("robot_descriptions")
-    urdf_file_path = os.path.join(urdf_launch_dir, "urdf/ur_with_table.urdf.xacro")
+    urdf_file_path = os.path.join(urdf_launch_dir, "urdf/ur.urdf.xacro")
     mappings = {
         "name": "ur",
         "sim_gazebo": sim_gazebo,
         "fake_sensor_commands": fake_sensor_commands,
-        "use_fake_hardware": use_fake_hardware,
+        #"use_fake_hardware": use_fake_hardware,
         "simulation_controllers": initial_joint_controllers,
     }
     moveit_config = (
         MoveItConfigsBuilder(
-            robot_name="ur_with_table", package_name="robot_moveit_config"
+            robot_name="ur", package_name="robot_moveit_config"
         )
         .robot_description(file_path=urdf_file_path, mappings=mappings)
         .robot_description_semantic(
@@ -160,13 +160,12 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_entity(declare_arguments())
-
-    wait_robot_description = Node(
-        package="robot_descriptions",
-        executable="wait_for_robot_description",
-        output="screen",
-    )
-    ld.add_action(wait_robot_description)
+    # wait_robot_description = Node(
+    #     package="robot_descriptions",
+    #     executable="wait_for_robot_description",
+    #     output="screen",
+    # )
+    # ld.add_action(wait_robot_description)
 
     move_group_node = Node(
         package="moveit_ros_move_group",
@@ -214,14 +213,16 @@ def generate_launch_description():
             },
         ],
     )
-
-    ld.add_action(
-        RegisterEventHandler(
-            OnProcessExit(
-                target_action=wait_robot_description,
-                on_exit=[move_group_node, rviz_node, servo_node],
-            )
-        ),
-    )
+    ld.add_action(move_group_node)
+    ld.add_action(rviz_node)
+    ld.add_action(servo_node)
+    # ld.add_action(
+    #     RegisterEventHandler(
+    #         OnProcessExit(
+    #             target_action=wait_robot_description,
+    #             on_exit=[move_group_node, rviz_node, servo_node],
+    #         )
+    #     ),
+    # )
 
     return ld

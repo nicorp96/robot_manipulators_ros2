@@ -11,6 +11,7 @@
 import time
 import rclpy
 import numpy as np
+import copy
 from .utils.task_node import TaskNode
 import moveit.planning
 from moveit.planning import (
@@ -26,6 +27,8 @@ import rclpy.node
 from .utils.gripper import XarmGripper, SuctionGripper, FrankaGripper
 from moveit_msgs.msg import CollisionObject
 from shape_msgs.msg import SolidPrimitive
+
+from trajectory_msgs.msg import JointTrajectory, JointTrajectoryPoint
 
 
 class MyNode(TaskNode):
@@ -46,6 +49,10 @@ class MyNode(TaskNode):
         self.arm.set_workspace(
             min_x=-1.0, min_y=-1.0, min_z=0.0, max_x=1.0, max_y=1.0, max_z=2.0
         )
+        self.publisher = self.create_publisher(
+            JointTrajectory, "/joint_trajectory_controller/joint_trajectory", 10
+        )
+
         self.run()
 
     def _load_params(self):
@@ -72,6 +79,9 @@ class MyNode(TaskNode):
         if plan_result:
             self.logger.info("Executing plan")
             robot_trajectory = plan_result.trajectory
+            # self.logger.info(
+            #     f"trajectory: {robot_trajectory.get_robot_trajectory_msg()}"
+            # )
             self.moveit.execute(robot_trajectory, controllers=[])
         else:
             self.logger.error("Planning failed")
@@ -105,11 +115,10 @@ class MyNode(TaskNode):
     ##############################################################################################
 
     def run(self):
-        #self.add_collision_object()
+        # self.add_collision_object()
         self.step1()
         self.step_gripper()
         self.step2()
-        # self.step3()
         self.step1()
         self.step_gripper()
         self.logger.info(f"current state: {self.get_current_state().joint_positions}")
@@ -151,8 +160,7 @@ class MyNode(TaskNode):
         self.arm.set_start_state_to_current_state()
         self.arm.set_goal_state(pose_stamped_msg=pose_goal, pose_link=self.tool_name)
         self.plan_and_execute()
-
-
+        
 def main():
     rclpy.init()
     rclpy.spin(MyNode())

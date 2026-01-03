@@ -39,18 +39,42 @@ def launch_setup(context, *args, **kwargs):
     moveit_config = None
     if robot == "ur5":
         urdf_launch_dir = get_package_share_directory("robot_descriptions")
-        urdf_file_path = os.path.join(urdf_launch_dir, "urdf/ur_with_table.urdf.xacro")
+        urdf_file_path = os.path.join(urdf_launch_dir, "urdf/ur.urdf.xacro")
         mappings = {
             "name": "ur",
             "sim_gazebo": sim_gazebo,
             "fake_sensor_commands": fake_sensor_commands,
-            "use_fake_hardware": use_fake_hardware,
+            #"use_fake_hardware": use_fake_hardware,
             "simulation_controllers": initial_joint_controllers,
         }
         moveit_config = (
             MoveItConfigsBuilder(
-                robot_name="ur_with_table", package_name="robot_moveit_config"
+                robot_name="ur", package_name="robot_moveit_config"
             )
+            .robot_description(file_path=urdf_file_path, mappings=mappings)
+            .robot_description_semantic(Path("srdf") / "ur.srdf.xacro", {"name": "ur"})
+            .moveit_cpp(
+                file_path=get_package_share_directory("robot_moveit_config")
+                + "/config/moveit_py.yaml"
+            )
+            .robot_description_kinematics(file_path="config/ur5/kinematics.yaml")
+            .trajectory_execution(file_path="config/ur5/moveit_controllers.yaml")
+            .joint_limits(file_path="config/ur5/joint_limits.yaml")
+            .to_moveit_configs()
+        )
+
+    if robot == "ur5_iq":
+        urdf_launch_dir = get_package_share_directory("robot_descriptions")
+        urdf_file_path = os.path.join(urdf_launch_dir, "urdf/ur.urdf.xacro")
+        mappings = {
+            "name": "ur",
+            "sim_gazebo": sim_gazebo,
+            "fake_sensor_commands": fake_sensor_commands,
+            # "use_fake_hardware": use_fake_hardware,
+            "simulation_controllers": initial_joint_controllers,
+        }
+        moveit_config = (
+            MoveItConfigsBuilder(robot_name="ur", package_name="robot_moveit_config")
             .robot_description(file_path=urdf_file_path, mappings=mappings)
             .robot_description_semantic(Path("srdf") / "ur.srdf.xacro", {"name": "ur"})
             .moveit_cpp(

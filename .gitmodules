@@ -1,17 +1,17 @@
 [submodule "src/Universal_Robots_ROS2_Driver"]
 	path = src/Universal_Robots_ROS2_Driver
 	url = https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver.git
-	branch = humble
+	branch = jazzy
 
 [submodule "src/Universal_Robots_ROS2_Description"]
 	path = src/Universal_Robots_ROS2_Description
 	url = https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
-	branch = humble
+	branch = jazzy
 
 [submodule "src/xarm_ros2"]
 	path = src/xarm_ros2
 	url = https://github.com/xArm-Developer/xarm_ros2.git
-	branch = humble
+	branch = jazzy
 
 [submodule "src/Universal_Robots_Client_Library"]
 	path = src/Universal_Robots_Client_Library
@@ -26,3 +26,4 @@
 [submodule "src/franka_description"]
 	path = src/franka_description
 	url = https://github.com/frankaemika/franka_description.git
+	branch = jazzy

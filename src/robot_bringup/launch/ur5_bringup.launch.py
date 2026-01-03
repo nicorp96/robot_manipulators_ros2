@@ -19,20 +19,17 @@ def launch_setup(context, *args, **kwargs):
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     [
-                        FindPackageShare("ur_robot_driver"),
+                        FindPackageShare("robot_bringup"),
                         "/launch",
                         "/ur_control.launch.py",
                     ]
                 ),
                 launch_arguments={
                     "robot_ip": "192.2222.227",
-                    "use_fake_hardware": "true",
-                    "fake_sensor_commands": "false",
+                    "use_mock_hardware": "true",
                     "ur_type": "ur5",
                     "launch_rviz": "false",
-                    "description_file": "ur_with_table.urdf.xacro",
-                    "description_package": "robot_descriptions",
-                    "use_sim_time": "false",
+                    "description_file": "ur.urdf.xacro",
                     "initial_joint_controller": "joint_trajectory_controller",
                 }.items(),
             )
@@ -42,20 +39,17 @@ def launch_setup(context, *args, **kwargs):
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(
                     [
-                        FindPackageShare("ur_robot_driver"),
+                        FindPackageShare("robot_bringup"),
                         "/launch",
                         "/ur_control.launch.py",
                     ]
                 ),
                 launch_arguments={
                     "robot_ip": "192.168.20.157",
-                    "use_fake_hardware": "false",
+                    "use_mock_hardware": "false",
                     "ur_type": "ur5",
-                    "fake_sensor_commands": "false",
                     "launch_rviz": "false",
-                    "description_file": "ur_with_table.urdf.xacro",
-                    "description_package": "robot_descriptions",
-                    "use_sim_time": "false",
+                    "description_file": "ur.urdf.xacro",
                     "initial_joint_controller": "joint_trajectory_controller",
                 }.items(),
             )
@@ -79,7 +73,6 @@ def launch_setup(context, *args, **kwargs):
             "launch_rviz": "true",
         }.items(),
     )
-
     nodes_to_launch.append(moveit_ur5_node)
     return nodes_to_launch
 

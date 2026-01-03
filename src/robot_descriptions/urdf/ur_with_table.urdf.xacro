@@ -140,12 +140,14 @@
 
   <xacro:if value="$(arg sim_gazebo)">
     <!-- Gazebo plugins -->
-    <gazebo reference="world">
-    </gazebo>
+    <!-- <gazebo reference="world">
+    </gazebo> -->
     <gazebo>
       <plugin filename="gz_ros2_control-system" name="gz_ros2_control::GazeboSimROS2ControlPlugin">
-        <parameters>$(arg simulation_controllers)</parameters>
-        <controller_manager_node_name>$(arg tf_prefix)controller_manager</controller_manager_node_name>
+          <robot_param>robot_description</robot_param>
+          <robot_param_node>robot_state_publisher</robot_param_node>
+          <parameters>$(arg simulation_controllers)</parameters>
+          <controller_manager_prefix_node_name>controller_manager</controller_manager_prefix_node_name>
       </plugin>
     </gazebo>
   </xacro:if>

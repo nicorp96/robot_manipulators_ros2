@@ -18,6 +18,8 @@ from launch.substitutions import (
 from launch_ros.actions import Node
 from launch_ros.substitutions import FindPackageShare
 
+from ament_index_python.packages import get_package_share_directory
+
 
 def launch_setup(context, *args, **kwargs):
 
@@ -26,6 +28,7 @@ def launch_setup(context, *args, **kwargs):
     safety_k_position = LaunchConfiguration("safety_k_position")
 
     description_package = LaunchConfiguration("description_package")
+    simulation_package = LaunchConfiguration("simulation_package")
     controllers_file = LaunchConfiguration("controllers_file")
     description_file = LaunchConfiguration("description_file")
     prefix = LaunchConfiguration("prefix")
@@ -33,16 +36,13 @@ def launch_setup(context, *args, **kwargs):
     launch_rviz = LaunchConfiguration("launch_rviz")
 
     initial_joint_controller = LaunchConfiguration("initial_joint_controller")
-    start_joint_controller = LaunchConfiguration("start_joint_controller")
     sim_gazebo = LaunchConfiguration("sim_gazebo")
-    sim_igz = LaunchConfiguration("sim_igz")
-    fake_sensor_commands = LaunchConfiguration("fake_sensor_commands")
-    use_fake_hardware = LaunchConfiguration("use_fake_hardware")
+    start_joint_controller = LaunchConfiguration("start_joint_controller")
     gazebo_gui = LaunchConfiguration("gazebo_gui")
-    world_file = LaunchConfiguration("world_file")
+    world_file = LaunchConfiguration("world_file").perform(context)
 
     initial_joint_controllers = PathJoinSubstitution(
-        [FindPackageShare(description_package), "config", controllers_file]
+        [FindPackageShare(simulation_package), "config", controllers_file]
     )
 
     joint_limit_params = PathJoinSubstitution(
@@ -116,20 +116,11 @@ def launch_setup(context, *args, **kwargs):
             " ",
             "output_recipe_filename:=rtde_output_recipe.txt",
             " ",
-            "prefix:=",
+            "tf_prefix:=",
             prefix,
             " ",
             "sim_gazebo:=",
-            sim_gazebo,
-            " ",
-            "sim_ignition:=",
-            sim_igz,
-            " ",
-            "fake_sensor_commands:=",
-            fake_sensor_commands,
-            " ",
-            "use_fake_hardware:=",
-            use_fake_hardware,
+            sim_gazebo, 
             " ",
             "simulation_controllers:=",
             initial_joint_controllers,
@@ -142,6 +133,10 @@ def launch_setup(context, *args, **kwargs):
         executable="robot_state_publisher",
         output="both",
         parameters=[{"use_sim_time": use_sim_time}, robot_description],
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static'),
+        ]
     )
 
     rviz_node = Node(
@@ -176,14 +171,21 @@ def launch_setup(context, *args, **kwargs):
     initial_joint_controller_spawner_started = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/controller_manager"],
+        output='screen',
+        arguments=[
+            initial_joint_controller,
+            "-c", "/controller_manager",
+        ],
         condition=IfCondition(start_joint_controller),
+        parameters=[{'use_sim_time': True}],
     )
+
     initial_joint_controller_spawner_stopped = Node(
         package="controller_manager",
         executable="spawner",
-        arguments=[initial_joint_controller, "-c", "/controller_manager", "--stopped"],
+        arguments=[initial_joint_controller, "-c", "/controller_manager"],
         condition=UnlessCondition(start_joint_controller),
+        parameters=[{'use_sim_time': True}],
     )
 
     # GZ nodes
@@ -192,19 +194,38 @@ def launch_setup(context, *args, **kwargs):
         executable="create",
         output="screen",
         arguments=[
+            '-topic', 'robot_description',
             "-string",
             robot_description_content,
             "-name",
             "ur",
             "-allow_renaming",
             "true",
+            '-x', '-0.1',
+            '-y', '0.0',
+            '-z', '1.021',
+            '-Y', '0.0',
         ],
+        parameters=[{'use_sim_time': True}],
     )
+
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+        ],
+        output='screen'
+    )
+
+    world_dir = get_package_share_directory("robot_descriptions")
+    world_file_path = os.path.join(world_dir, "worlds", world_file)
+
     gz_launch_description_with_gui = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
         ),
-        launch_arguments={"gz_args": ["-r", "-v", "4", world_file]}.items(),
+        launch_arguments={"gz_args": ["-r", "-v", "4", world_file_path]}.items(),
         condition=IfCondition(gazebo_gui),
     )
 
@@ -212,12 +233,13 @@ def launch_setup(context, *args, **kwargs):
         PythonLaunchDescriptionSource(
             [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
         ),
-        launch_arguments={"gz_args": ["-s", "-r", "-v", "4", world_file]}.items(),
+        launch_arguments={"gz_args": ["-s", "-r", "-v", "4", world_file_path]}.items(),
         condition=UnlessCondition(gazebo_gui),
     )
 
     nodes_to_start = [
         robot_state_publisher_node,
+        bridge,
         joint_state_broadcaster_spawner,
         delay_rviz_after_joint_state_broadcaster_spawner,
         initial_joint_controller_spawner_stopped,
@@ -269,14 +291,6 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "fake_sensor_commands",
-            default_value="true",
-            description="Indicate whether robot will run in simulation.",
-        )
-    )
-
-    declared_arguments.append(
-        DeclareLaunchArgument(
-            "use_fake_hardware",
             default_value="true",
             description="Indicate whether robot will run in simulation.",
         )
@@ -338,6 +352,15 @@ def generate_launch_description():
 
     declared_arguments.append(
         DeclareLaunchArgument(
+            "simulation_package",
+            default_value="robot_simulation",
+            description="Package with robot controller file for gazebo. Usually the argument \
+        is not set, it enables use of a custom description.",
+        )
+    )
+
+    declared_arguments.append(
+        DeclareLaunchArgument(
             "controllers_file",
             default_value="ur_controllers.yaml",
             description="YAML file with the controllers configuration.",
@@ -347,7 +370,7 @@ def generate_launch_description():
     declared_arguments.append(
         DeclareLaunchArgument(
             "description_file",
-            default_value="ur_with_table.urdf.xacro",
+            default_value="ur.urdf.xacro",
             description="URDF/XACRO description file with the robot.",
         )
     )
