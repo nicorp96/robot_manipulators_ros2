@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot xmlns:xacro="http://wiki.ros.org/xacro" name="xarm_srdf">
+  <xacro:macro name="xarm_macro_srdf" params="prefix:='' dof:=7 robot_type:='xarm'
+    add_gripper:='false' add_vacuum_gripper:='false' add_bio_gripper:='false' add_other_geometry:='false' "> 
+    <xacro:include filename="$(find robot_moveit_config)/srdf/xarm6/xarm6_macro.srdf.xacro" />
+    <xacro:xarm6_macro_srdf prefix="${prefix}" 
+      add_gripper="${add_gripper}" add_vacuum_gripper="${add_vacuum_gripper}" add_bio_gripper="${add_bio_gripper}" add_other_geometry="${add_other_geometry}"  />
+  </xacro:macro>
+</robot>

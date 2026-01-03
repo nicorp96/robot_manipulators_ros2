@@ -1,0 +1,38 @@
+controller_names:
+  - scaled_joint_trajectory_controller
+  - joint_trajectory_controller
+
+scaled_joint_trajectory_controller:
+  action_ns: follow_joint_trajectory
+  type: FollowJointTrajectory
+  default: true
+  joints:
+    - shoulder_pan_joint
+    - shoulder_lift_joint
+    - elbow_joint
+    - wrist_1_joint
+    - wrist_2_joint
+    - wrist_3_joint
+  state_publish_rate: 120.0
+  action_monitor_rate: 20.0
+  allow_partial_joints_goal: false
+  constraints:
+    stopped_velocity_tolerance: 0.0
+    goal_time: 0.0
+
+
+joint_trajectory_controller:
+  action_ns: follow_joint_trajectory
+  type: FollowJointTrajectory
+  default: false
+  joints:
+    - shoulder_pan_joint
+    - shoulder_lift_joint
+    - elbow_joint
+    - wrist_1_joint
+    - wrist_2_joint
+    - wrist_3_joint
+  allow_partial_joints_goal: false
+  constraints:
+    stopped_velocity_tolerance: 0.0
+    goal_time: 0.0

@@ -1,0 +1,8 @@
+*build
+*log
+*install
+*.vscode
+*venv-lstm
+**__pycache__
+*venv-tf
+*logs
