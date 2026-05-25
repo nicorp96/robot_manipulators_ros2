@@ -1,0 +1,239 @@
+# Copyright (c) 2024 Franka Robotics GmbH
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import os
+import xacro
+
+from ament_index_python.packages import get_package_share_directory
+
+from launch import LaunchDescription
+from launch.actions import (
+    DeclareLaunchArgument,
+    OpaqueFunction,
+    RegisterEventHandler,
+)
+from launch.event_handlers import OnProcessExit
+
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch.substitutions import LaunchConfiguration
+from launch import LaunchContext, LaunchDescription
+from launch.actions import IncludeLaunchDescription
+from launch.launch_description_sources import PythonLaunchDescriptionSource
+from launch_ros.substitutions import FindPackageShare
+from launch_ros.actions import Node
+from launch.conditions import IfCondition
+
+
+def get_robot_description(context: LaunchContext, arm_id, load_gripper, franka_hand):
+    arm_id_str = context.perform_substitution(arm_id)
+    load_gripper_str = context.perform_substitution(load_gripper)
+    franka_hand_str = context.perform_substitution(franka_hand)
+
+    franka_xacro_file = os.path.join(
+        get_package_share_directory("robot_descriptions"),
+        "urdf",
+        "franka_panda.urdf.xacro",
+    )
+
+    robot_description_config = xacro.process_file(
+        franka_xacro_file,
+        mappings={
+            "arm_id": arm_id_str,
+            "hand": load_gripper_str,
+            "ros2_control": "true",
+            "gazebo": "true",
+            "ee_id": franka_hand_str,
+        },
+    )
+    robot_description = {"robot_description": robot_description_config.toprettyxml()}
+
+    robot_state_publisher = Node(
+        package="robot_state_publisher",
+        executable="robot_state_publisher",
+        name="robot_state_publisher",
+        output="both",
+        parameters=[
+            {
+                "use_sim_time": True,
+            },
+            robot_description,
+        ],
+        remappings=[
+            ('/tf', 'tf'),
+            ('/tf_static', 'tf_static'),
+        ]
+    )
+    return [robot_state_publisher]
+
+
+def prepare_launch_description():
+    # Configure ROS nodes for launch
+    load_gripper_name = "load_gripper"
+    franka_hand_name = "franka_hand"
+    arm_id_name = "arm_id"
+
+    load_gripper = LaunchConfiguration(load_gripper_name)
+    franka_hand = LaunchConfiguration(franka_hand_name)
+    arm_id = LaunchConfiguration(arm_id_name)
+    start_rviz = LaunchConfiguration("start_rviz")
+
+    world_dir = get_package_share_directory("robot_simulation")
+    world_file_path = os.path.join(world_dir, "worlds", "table.world")
+
+    load_gripper_launch_argument = DeclareLaunchArgument(
+        load_gripper_name,
+        default_value="false",
+        description="true/false for activating the gripper",
+    )
+    franka_hand_launch_argument = DeclareLaunchArgument(
+        franka_hand_name,
+        default_value="franka_hand",
+        description="Default value: franka_hand",
+    )
+    arm_id_launch_argument = DeclareLaunchArgument(
+        arm_id_name,
+        default_value="fer",
+        description="Available values: fr3, fp3 and fer",
+    )
+    start_rviz_argument = DeclareLaunchArgument(
+        "start_rviz",
+        default_value="true",
+        description="true/false for start rviz",
+    )
+
+    # Get robot description
+    robot_state_publisher = OpaqueFunction(
+        function=get_robot_description, args=[arm_id, load_gripper, franka_hand]
+    )
+
+    # Gazebo Sim
+    gazebo_empty_world = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            [FindPackageShare("ros_gz_sim"), "/launch/gz_sim.launch.py"]
+        ),
+        launch_arguments={
+            "gz_version": "8",
+            "gz_args": ["-r -v 4 " + world_file_path],
+        }.items(),
+    )
+
+    # Spawn
+    spawn = Node(
+        package="ros_gz_sim",
+        executable="create",
+        output="screen",
+        arguments=[
+            "-topic",
+            "robot_description",
+            "-allow_renaming",
+            "true",
+            "-x",
+            "-0.1",
+            "-y",
+            "0.0",
+            "-z",
+            "1.021",
+            "-Y",
+            "0.0",
+        ],
+    )
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=[
+            '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
+        ],
+        output='screen'
+    )
+
+    # Visualize in RViz
+    rviz_file = os.path.join(
+        get_package_share_directory("franka_description"),
+        "rviz",
+        "visualize_franka.rviz",
+    )
+    rviz = Node(
+        package="rviz2",
+        executable="rviz2",
+        name="rviz2",
+        arguments=["--display-config", rviz_file, "-f", "world"],
+        condition=IfCondition(start_rviz),
+    )
+
+    load_joint_state_broadcaster = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=[
+            "joint_state_broadcaster",
+            "--controller-manager",
+            "/controller_manager",
+        ],
+    )
+
+    load_joint_position_example_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["joint_trajectory_controller", "-c", "/controller_manager"],
+        # condition=IfCondition(start_joint_controller),
+    )
+    load_gripper_controller = Node(
+        package="controller_manager",
+        executable="spawner",
+        arguments=["gripper_controller", "-c", "/controller_manager"],
+    )
+
+    return LaunchDescription(
+        [
+            load_gripper_launch_argument,
+            franka_hand_launch_argument,
+            arm_id_launch_argument,
+            start_rviz_argument,
+            gazebo_empty_world,
+            robot_state_publisher,
+            bridge,
+            spawn,
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=spawn,
+                    on_exit=[load_joint_state_broadcaster],
+                )
+            ),
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=load_joint_state_broadcaster,
+                    on_exit=[load_joint_position_example_controller],
+                )
+            ),
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=load_joint_state_broadcaster,
+                    on_exit=[load_gripper_controller],
+                )
+            ),
+            rviz,
+        ]
+    )
+
+
+def generate_launch_description():
+    launch_description = prepare_launch_description()
+
+    # set_env_vars_resources = AppendEnvironmentVariable(
+    #     'GZ_SIM_RESOURCE_PATH',
+    #     os.path.join(get_package_share_directory('franka_description')))
+
+    # launch_description.add_action(set_env_vars_resources)
+
+    return launch_description
