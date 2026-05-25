@@ -1,28 +1,9 @@
-[submodule "src/Universal_Robots_ROS2_Driver"]
-	path = src/Universal_Robots_ROS2_Driver
-	url = https://github.com/UniversalRobots/Universal_Robots_ROS2_Driver.git
-	branch = humble
-
-[submodule "src/Universal_Robots_ROS2_Description"]
-	path = src/Universal_Robots_ROS2_Description
-	url = https://github.com/UniversalRobots/Universal_Robots_ROS2_Description.git
-	branch = humble
-
 [submodule "src/xarm_ros2"]
-	path = src/xarm_ros2
+	path = src/robot_core/xarm_ros2
 	url = https://github.com/xArm-Developer/xarm_ros2.git
-	branch = humble
-
-[submodule "src/Universal_Robots_Client_Library"]
-	path = src/Universal_Robots_Client_Library
-	url = https://github.com/UniversalRobots/Universal_Robots_Client_Library.git
-	branch = master
-
-[submodule "src/ur_msgs"]
-	path = src/ur_msgs
-	url = https://github.com/ros-industrial/ur_msgs.git
-	branch = humble
+	branch = jazzy
 
 [submodule "src/franka_description"]
-	path = src/franka_description
+	path = src/robot_core/franka_description
 	url = https://github.com/frankaemika/franka_description.git
+	branch = jazzy

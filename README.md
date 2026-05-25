@@ -1,6 +1,6 @@
 # Multi-Robot Manipulator Control with MoveIt
 
-This repository provides a framework for controlling multiple robot manipulators, specifically the XArm6 and Universal Robots UR5, using MoveIt. It includes configurations and launch files for real robot operation, fake robot setups for development purposes, and simulation environments.
+This repository is a ROS 2 workspace showcasing MoveIt2-based robot manipulation configurations for XArm6, UR5, and Franka. It includes robot descriptions, MoveIt configuration, launch files, and task planner examples for real robots, fake controllers, and simulation setups.
 
 # Table of Contents
 - [Packages Overview](#packages-overview)
@@ -18,11 +18,6 @@ This repository provides a framework for controlling multiple robot manipulators
     - [Real Robot](#real-robot-franka)
     - [Fake Robot](#fake-robot-franka)
     - [Simulation](#simulation-franka)
-- [General Information](#general-information)
-    - [How to use git](#how-to-use-git)
-- [Integrating and Documenting your Code](#integrating-and-documenting-your-code)
-    - [Rules and Preparation](#rules-and-preparation)
-    - [Submission](#submission)
 
 # Packages Overview
 
@@ -41,17 +36,11 @@ This repository provides a framework for controlling multiple robot manipulators
   This package comprises all configuration and launch files needed to initialize the MoveIt2 interface for the robots. It supports both real-world operations and simulations.
 
 - **robot_simulation**:  
-  This package contains all the configuration and launch files required to run robotic simulations in Ignition.
+  This package contains all the configuration and launch files required to run robotic simulations.
 
 ### Git Submodules
 
 The following submodules are included in the repository and provide additional resources and drivers for the robots:
-
-- **Universal_Robots_ROS2_Description**:  
-  Provides the URDFs and meshes for the Universal Robots series, specifically tailored for ROS 2.
-
-- **Universal_Robots_ROS2_Driver**:  
-  ROS 2 driver for Universal Robots manipulators. It handles communication between the robot and ROS.
 
 - **franka_description**:  
   Provides the URDFs and meshes for the Franka Robots series, specifically tailored for ROS 2.
@@ -61,7 +50,7 @@ The following submodules are included in the repository and provide additional r
 
 # Getting Started
 
-## Create your feature branch
+## Setup
 
 1. **Clone the repository:**
     ```bash
@@ -69,28 +58,18 @@ The following submodules are included in the repository and provide additional r
     cd robot_manipulators_moveit2
     ```
 
-2. **Configure your git**
+2. **Configure your git identity if needed:**
     ```bash
-    git config --global user.email "your_hm_email@hm.edu"
-    git config --global user.name "your_name"
+    git config --global user.email "your_email@example.com"
+    git config --global user.name "Your Name"
     ```
 
-3. **Create and Chekout to your assigned Branch:**
-    Checkout to the Branch of the project
+3. **Create a working branch:**
     ```bash
-    git remote add origin https://gitlab.lrz.de/lasim/robot_manipulators_moveit2.git
     git checkout develop
     git pull origin develop
-    git checkout -b feature/put_your_feature_branch_name_here
+    git checkout -b feature/your-feature-name
     ```
-    This will be your main working branch where you push your changes.
-    ```
-
-We advise you to **delegate** tasks within your group instead of doing everything together.
-
-### Important Note:
-Don't create a merge request everytime you push some changes. If you work as a group on one branch only, create a merge request at the end of your term. If you work issue based, create a merge request after you have solved the task completely. For more information see section "Integrating and Documenting your Code".
-
 
 4. **Init and clone the submodules:** 
 
@@ -101,14 +80,17 @@ Don't create a merge request everytime you push some changes. If you work as a g
 5. **Update the submodules from remote:** 
 
     ```bash
-    git submodule update --remote
+    git pull --recurse-submodules
+    ```
+6. **Set the workspace robot_manipulators_moveit2:**
+
+    ```bash
+    set_ws ~/robot_manipulators_moveit2
     ```
 
-6. **Build the workspace robot_manipulators_moveit2:**
+7. **Build the workspace robot_manipulators_moveit2:**
     ```bash
-    cd ~/robot_manipulators_moveit2
-    colcon build --packages-ignore realsense_gazebo_plugin xarm_gazebo
-    source install/setup.bash
+    bld
     ```
 
 # Usage
@@ -119,24 +101,46 @@ Don't create a merge request everytime you push some changes. If you work as a g
 
 1. **Launch MoveIt with the real XArm6:**
     ```bash
-    ros2 launch robot_bringup xarm6_bringup.launch.py fake_controllers:=false
+    ros2 launch robot_bringup bringup.launch.py robot:=xarm6
     ```
 
-2. **Launch PY Task Planner Algorithm:**
+2. **Launch PY Task Planner Algorithm (with all other robots):**
     ```bash
-    ros2 launch py_task_planner moveitpy_example.launch.py use_sim_time:=false
+    ros2 launch py_task_planner moveitpy_all_example.launch.py robot:=xarm6
+    ```
+
+3. **Launch PY Task Planner Example Algorithm (only xarm):**
+    ```bash
+    ros2 launch py_task_planner moveitpy_xarm_example.launch.py fake_controller:=false
     ```
 
 ### Fake Robot XArm6
 
 1. **Launch MoveIt with a fake XArm6:**
     ```bash
-    ros2 launch robot_bringup xarm6_bringup.launch.py fake_controllers:=true
+    ros2 launch robot_bringup bringup.launch.py robot:=xarm6_fake
     ```
-2. **Launch PY Task Planner Algorithm:**
+2.  **Launch PY Task Planner Algorithm (with all other robots):**
     ```bash
-    ros2 launch py_task_planner moveitpy_example.launch.py use_sim_time:=false robot:=xarm6_fake
+    ros2 launch py_task_planner moveitpy_all_example.launch.py robot:=xarm6_fake
     ```
+    
+3. **Launch PY Task Planner Example Algorithm (only xarm):**
+    ```bash
+    ros2 launch py_task_planner moveitpy_xarm_example.launch.py fake_controller:=true
+    ```
+
+
+### Simple MoveIt example template of a task for UR5.
+1. **Launch the real UR5 Driver:**
+    ```bash
+    ros2 launch robot_bringup bringup.launch.py robot:=ur5
+    ```
+2. **Launch PY Control: (Example)**
+    ```bash
+    ros2 launch py_task_planner moveitpy_ur5_example.launch.py
+    ```
+    
 **Important Information: Initial Pose**
 The initial pose of the robot in simulation setup can be changed within xarm6.ros2_control.xacro, please contact us for guidance.
 
@@ -156,33 +160,66 @@ The initial pose of the robot in simulation setup can be changed within xarm6.ro
 
 1. **Launch the real UR5 Driver:**
     ```bash
-    ros2 launch robot_bringup ur5_bringup.launch.py fake_controllers:=false
+    ros2 launch robot_bringup bringup.launch.py robot:=ur5
     ```
 2. **Launch Task Planner Algorithm:**
     ```bash
-    ros2 launch py_task_planner moveitpy_example.launch.py robot:=ur5 ref_frame:=base_link tool_name:=tool0 group_name:=ur_manipulator use_sim_time:=false
+    ros2 launch py_task_planner moveitpy_all_example.launch.py robot:=ur5
+    ```
+
+### Real Robot UR5 with Adaptive Suction Gripper (Moveit)
+
+1. **Launch the real UR5 Driver:**
+    ```bash
+    ros2 launch robot_bringup ur5_bringup.launch.py fake_controllers:=false
+    ```
+3. **Launch PY Suction Control: (Example)**
+    ```bash
+    ros2 launch py_task_planner moveitpy_suction.launch.py robot:=ur5 ref_frame:=base_link tool_name:=tool0 group_name:=ur_manipulator use_sim_time:=false
     ```
 
 ### Fake Robot UR5
 
 1. **Launch MoveIt with a fake UR5:**
     ```bash
-    ros2 launch robot_bringup ur5_bringup.launch.py fake_controllers:=true
+    ros2 launch robot_bringup bringup.launch.py robot:=ur5_fake
     ```
 2. **Launch PY Task Planner Algorithm:**
     ```bash
-    ros2 launch py_task_planner moveitpy_example.launch.py robot:=ur5 ref_frame:=base_link tool_name:=tool0 group_name:=ur_manipulator use_sim_time:=false
+    ros2 launch py_task_planner moveitpy_all_example.launch.py robot:=ur5
     ```
+
 
 ### Simulation UR5
 
 1. **Launch Gazebo with UR5 and MoveIt:**
     ```bash
-    ros2 launch robot_bringup ur5_simulation.launch.py
+    ros2 launch robot_bringup bringup.launch.py robot:=ur5_sim
     ```
 2. **Control the simulated UR5 in Gazebo with PY Task Planner:**
     ```bash
-    ros2 launch py_task_planner moveitpy_example.launch.py robot:=ur5 ref_frame:=base_link tool_name:=tool0 group_name:=ur_manipulator use_sim_time:=true
+    ros2 launch py_task_planner moveitpy_all_example.launch.py robot:=ur5_sim
+    ```
+
+### Real Robot UR5 with Adaptive Suction Gripper (Moveit)
+
+1. **Launch the real UR5 Driver:**
+    ```bash
+    ros2 launch robot_bringup bringup.launch.py robot:=ur5
+    ```
+2. **Launch PY Suction Control: (Example)**
+    ```bash
+    ros2 launch py_task_planner moveitpy_suction.launch.py
+    ```
+
+### Simple MoveIt example template of a task for UR5.
+1. **Launch the real UR5 Driver:**
+    ```bash
+    ros2 launch robot_bringup bringup.launch.py robot:=ur5
+    ```
+2. **Launch PY Control: (Example)**
+    ```bash
+    ros2 launch py_task_planner moveitpy_ur5_example.launch.py
     ```
 
 ## Starting Franka
@@ -214,47 +251,9 @@ The initial pose of the robot in simulation setup can be changed within xarm6.ro
 
 1. **Launch Gazebo with Franka and MoveIt:**
     ```bash
-    ros2 launch robot_bringup franka_simulation.launch.py
+    ros2 launch robot_bringup bringup.launch.py robot:=franka_sim
     ```
 2. **Launch PY Task Planner Algorithm:**
     ```bash
-    ros2 launch py_task_planner moveitpy_example.launch.py use_sim_time:=true robot:=franka group_name:=fer_manipulator tool_name:=fer_hand ref_frame:=fer_link0
+    ros2 launch py_task_planner moveitpy_all_example.launch.py robot:=franka_sim
     ```
-
-# General Information
-## How to use git
-You are encouraged to document your whole workflow by continuously pushing to your feature branch. This makes it easier for us (and your teammates :wink:) to understand what you are doing.
-Your most used commands will be:
-```bash
-git add file1 file2 # stage specific files 
-git add . # stage all files under the current directory
-git commit -m "your commit message" # commit your changes. "-m" directly appends the commit message
-git push # push your changes to your branch
-git pull # pull changes from remote repository
-git branch # shows all branches, asteriks marks the branch you're on
-git checkout branch1 # switch to a different branch
-git checkout -b new_feature # create a new branch and switch to it
-git status # show the current state of your branch
-```
-Following might be of use, but you probably already know what you're doing by then:
-```bash
-git stash push # stash uncommited changes and revert your repo
-git stash pop # merge changes saved in your latest stash with current branch. Your stash gets deleted
-git reflog # show your git workflow
-git reset # reset your branch to a specific state
-```
-For more indepth information, please see https://git-scm.com/docs/gittutorial
-
-# Integrating and Documenting your Code 
-## Rules and Preparation
-- Only push **unbuilt!** code i.e. only "git add" the changes located in `robot_manipulators_moveit2/src`
-- Make useful commit messages, stating what you've done or changed
-- Python: make sure your code is well documented and adheres to the [PEP8](https://peps.python.org/pep-0008/) conventions 
-- C++: use a [clang formatter](https://clang.llvm.org/docs/ClangFormat.html), which can be installed via Marketplace when using VS Code.
-- Make sure to include a `README.md` under your package folder explaining how your package works. Include third party requirements as well. Either as a requirements.txt or in the `README.md` directly via pip install commands. The documentation will be part of your grading.
-## Submission
-Push your final changes to your feature branch and create a merge request. Merge requests will be retargeted to the "develop" branch. If "develop" is not chosen automatically, please do so manually. Git will check for merge conflicts, which you will have to resolve manually. If you've created a new package, there shouldn't be any conflicts at all, since it's contained in a new folder in `/src/`.
-
-Use your project and group name as merge commit e.g **"robot_manipulators_abgabe_gruppeX_WS2024"**.
-
-Don't push on main.
